@@ -8,11 +8,17 @@ interface PalletsLayerProps {
 
 export function PalletsLayer({ nearestPalletId = null }: PalletsLayerProps) {
   const pallets = useGameStore((s) => s.pallets)
+  const jobs = useGameStore((s) => s.jobs)
+  const activePalletIds = new Set(
+    jobs.filter((j) => j.status === 'aktiv').flatMap((j) => j.palletIds),
+  )
 
   return (
     <group>
       {pallets.map((pallet) => {
         if (pallet.state === 'getragen') return null
+        // pallets on the truck only appear once the related job was accepted
+        if (pallet.state === 'wartend' && !activePalletIds.has(pallet.id)) return null
         const position =
           pallet.state === 'eingelagert' && pallet.slotId
             ? (() => {

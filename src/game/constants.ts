@@ -23,7 +23,9 @@ export const DELIVERY_SPACING = 1.3
 export const DELIVERY_ROW_LENGTH = 5
 export const DELIVERY_ROW_GAP = 1.3
 
-export const STARTING_CASH = 850
+// "Kein Polster": das Startkapital wurde bereits vollständig für die erste
+// Miete und den gebrauchten Handgabelhubwagen ausgegeben.
+export const STARTING_CASH = 0
 export const RENT_PER_DAY = 180
 export const HAND_JACK_MAX_KG = 2200
 
