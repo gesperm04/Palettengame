@@ -4,6 +4,7 @@ import { Garage } from '@/game/scene/Garage'
 import { StorageSlots } from '@/game/scene/StorageSlots'
 import { PalletsLayer } from '@/game/scene/PalletsLayer'
 import { Truck } from '@/game/scene/Truck'
+import { JackProp } from '@/game/scene/JackProp'
 import { Lighting } from '@/game/scene/Lighting'
 import { Character } from '@/game/player/Character'
 import { FollowCamera } from '@/game/player/FollowCamera'
@@ -26,6 +27,7 @@ export function GameScene() {
       <StorageSlots />
       <PalletsLayer nearestPalletId={nearestPalletId} />
       <Truck />
+      <JackProp />
       <FollowCamera />
     </Suspense>
   )

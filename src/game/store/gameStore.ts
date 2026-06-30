@@ -32,6 +32,7 @@ export interface GameState {
   jobBoardOpen: boolean
 
   acceptJob: (jobId: string) => void
+  pickUpJack: () => void
   pickUpPallet: (palletId: string) => void
   placeCarriedPallet: (slotId: string) => void
   endDay: () => void
@@ -58,7 +59,7 @@ export const useGameStore = create<GameState>((set) => ({
   jobs: [],
   pallets: [],
   slots: buildSlots(),
-  equipment: { carriedPalletId: null, forksRaised: false },
+  equipment: { hasJack: false, carriedPalletId: null, forksRaised: false },
   lastReport: null,
   jobBoardOpen: false,
 
@@ -69,9 +70,14 @@ export const useGameStore = create<GameState>((set) => ({
       ),
     })),
 
+  pickUpJack: () =>
+    set((state) =>
+      state.equipment.hasJack ? state : { equipment: { ...state.equipment, hasJack: true } },
+    ),
+
   pickUpPallet: (palletId) =>
     set((state) => {
-      if (state.equipment.carriedPalletId) return state
+      if (!state.equipment.hasJack || state.equipment.carriedPalletId) return state
       const pallet = state.pallets.find((p) => p.id === palletId)
       if (!pallet || pallet.state !== 'wartend') return state
       return {

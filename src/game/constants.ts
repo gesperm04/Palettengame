@@ -29,6 +29,11 @@ export const STARTING_CASH = 0
 export const RENT_PER_DAY = 180
 export const HAND_JACK_MAX_KG = 2200
 
+// Wo der Handgabelhubwagen geparkt ist, bis er aufgenommen wird
+export const JACK_PARK_POSITION: [number, number, number] = [4.4, 0, 0.5]
+export const JACK_PARK_ROTATION_Y = Math.PI / 2
+export const JACK_PICKUP_RANGE = 1.6
+
 export function deliveryPosition(index: number): [number, number, number] {
   const col = index % DELIVERY_ROW_LENGTH
   const row = Math.floor(index / DELIVERY_ROW_LENGTH)

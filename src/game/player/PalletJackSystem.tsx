@@ -5,8 +5,14 @@ import { playerTransform } from '@/game/store/playerTransform'
 import { useGameStore } from '@/game/store/gameStore'
 import { useInteractionStore } from '@/game/store/interactionStore'
 import { consumeAction } from '@/game/input/inputState'
-import { deliveryPosition, slotPosition, PALLET_HEIGHT } from '@/game/constants'
+import {
+  deliveryPosition,
+  slotPosition,
+  JACK_PARK_POSITION,
+  JACK_PICKUP_RANGE,
+} from '@/game/constants'
 import { PalletMesh } from '@/game/scene/Pallet'
+import { HandPalletJackMesh } from '@/game/scene/HandPalletJackMesh'
 
 const PICKUP_RANGE = 1.7
 const PLACE_RANGE = 1.9
@@ -29,8 +35,17 @@ export function PalletJackSystem() {
 
     const interaction = useInteractionStore.getState()
     const triggered = consumeAction()
+    const hasJack = useGameStore.getState().equipment.hasJack
 
-    if (jackState === 'free') {
+    if (!hasJack) {
+      const [jx, , jz] = JACK_PARK_POSITION
+      const inRange = Math.hypot(jx - px, jz - pz) <= JACK_PICKUP_RANGE
+      interaction.setContext(inRange ? 'hubwagen_nehmen' : null, null, null)
+      interaction.setLiftProgress(0)
+      if (triggered && inRange) {
+        useGameStore.getState().pickUpJack()
+      }
+    } else if (jackState === 'free') {
       const { pallets, jobs } = useGameStore.getState()
       const activePalletIds = new Set(
         jobs.filter((j) => j.status === 'aktiv').flatMap((j) => j.palletIds),
@@ -95,7 +110,7 @@ export function PalletJackSystem() {
     // position the jack + carried pallet visual in front of the player
     const group = jackVisualRef.current
     if (group) {
-      const visible = jackState !== 'free'
+      const visible = hasJack
       group.visible = visible
       if (visible) {
         const offsetX = Math.sin(facing) * JACK_OFFSET
@@ -115,25 +130,7 @@ export function PalletJackSystem() {
 
   return (
     <group ref={jackVisualRef} visible={false}>
-      {/* hand pallet jack chassis */}
-      <mesh position={[0, 0.1, 0.5]} castShadow>
-        <boxGeometry args={[0.55, 0.18, 0.25]} />
-        <meshStandardMaterial color="#d8232a" roughness={0.6} metalness={0.2} />
-      </mesh>
-      {/* forks */}
-      <mesh position={[-0.16, PALLET_HEIGHT / 2, -0.15]} castShadow>
-        <boxGeometry args={[0.12, 0.08, 1.1]} />
-        <meshStandardMaterial color="#2b2b2b" roughness={0.5} metalness={0.4} />
-      </mesh>
-      <mesh position={[0.16, PALLET_HEIGHT / 2, -0.15]} castShadow>
-        <boxGeometry args={[0.12, 0.08, 1.1]} />
-        <meshStandardMaterial color="#2b2b2b" roughness={0.5} metalness={0.4} />
-      </mesh>
-      {/* tiller / steering handle */}
-      <mesh position={[0, 0.75, 0.85]} rotation={[0.5, 0, 0]} castShadow>
-        <boxGeometry args={[0.4, 0.06, 0.06]} />
-        <meshStandardMaterial color="#181818" roughness={0.7} />
-      </mesh>
+      <HandPalletJackMesh />
 
       {carriedPallet && (
         <group position={[0, 0, -0.15]}>
