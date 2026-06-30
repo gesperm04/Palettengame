@@ -33,7 +33,7 @@ export function Character() {
 
     // points away from the camera, i.e. the direction the camera is looking
     tmpForward.set(-Math.sin(cameraState.yaw), 0, -Math.cos(cameraState.yaw))
-    tmpRight.set(tmpForward.z, 0, -tmpForward.x)
+    tmpRight.set(-tmpForward.z, 0, tmpForward.x)
     tmpDir
       .set(0, 0, 0)
       .addScaledVector(tmpRight, moveX)
