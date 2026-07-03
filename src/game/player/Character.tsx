@@ -9,6 +9,7 @@ import { useGameStore } from '@/game/store/gameStore'
 
 const WALK_SPEED = 3.2
 const CARRY_SPEED = 2.1
+const ELECTRIC_CARRY_SPEED = 2.8
 const TURN_LERP = 0.22
 
 const tmpDir = new THREE.Vector3()
@@ -24,8 +25,9 @@ export function Character() {
     const body = bodyRef.current
     if (!body) return
 
-    const carrying = !!useGameStore.getState().equipment.carriedPalletId
-    const speed = carrying ? CARRY_SPEED : WALK_SPEED
+    const equipment = useGameStore.getState().equipment
+    const carrying = !!equipment.carriedPalletId
+    const speed = carrying ? (equipment.activeTool === 'elektro' ? ELECTRIC_CARRY_SPEED : CARRY_SPEED) : WALK_SPEED
 
     const moveX = inputState.moveX
     const moveZ = inputState.moveZ

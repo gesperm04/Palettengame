@@ -4,6 +4,8 @@ import { GameScene } from '@/game/scene/GameScene'
 import { HUD } from '@/game/ui/HUD'
 import { TouchControls } from '@/game/ui/TouchControls'
 import { JobBoard } from '@/game/ui/JobBoard'
+import { EquipmentShop } from '@/game/ui/EquipmentShop'
+import { ScannerOverlay } from '@/game/ui/ScannerOverlay'
 import { DayEndReport } from '@/game/ui/DayEndReport'
 import { initGameIfEmpty, useGameStore } from '@/game/store/gameStore'
 import { initAutosave, loadSavedGame } from '@/game/persistence/saveGame'
@@ -34,7 +36,9 @@ function App() {
       </Canvas>
       <HUD />
       <TouchControls />
+      <ScannerOverlay />
       <JobBoard />
+      <EquipmentShop />
       <DayEndReport />
     </div>
   )

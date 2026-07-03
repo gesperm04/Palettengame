@@ -4,6 +4,8 @@ export type PalletState = 'wartend' | 'getragen' | 'eingelagert'
 
 export interface Pallet {
   id: string
+  /** scannable code shown by the scanner mechanic, e.g. "PAL-4821" */
+  code: string
   goods: PalletGoods
   label: string
   state: PalletState
@@ -15,13 +17,14 @@ export interface Pallet {
 
 export interface StorageSlot {
   id: string
+  /** human-readable location code, e.g. "Gang 2 - Platz 03" */
   code: string
   gridX: number
   gridZ: number
   occupiedPalletId: string | null
 }
 
-export type JobType = 'einlagerung'
+export type JobType = 'einlagerung' | 'umlagerung'
 
 export type JobStatus = 'verfuegbar' | 'aktiv' | 'erledigt' | 'fehlgeschlagen'
 
@@ -32,9 +35,12 @@ export interface Job {
   client: string
   description: string
   payout: number
+  /** day by which the job must be accepted (if 'verfuegbar') or completed (if 'aktiv') */
   deadlineDay: number
   palletIds: string[]
   status: JobStatus
+  /** umlagerung only: palletId -> target storage slot id */
+  relocationTargets?: Record<string, string>
 }
 
 export interface DailyReport {
@@ -43,18 +49,26 @@ export interface DailyReport {
   rent: number
   profit: number
   jobsCompleted: number
+  jobsFailed: number
+  reputationDelta: number
   cashAfter: number
 }
 
+export type ToolType = 'hand' | 'elektro'
+
 export interface EquipmentState {
-  /** whether the player has fetched the hand pallet jack from its parking spot */
-  hasJack: boolean
-  /** where the jack is parked while not held by the player */
-  jackPosition: [number, number, number]
-  /** facing angle the jack was left at when parked */
-  jackRotationY: number
-  /** id of the pallet currently lifted on the hand pallet jack, if any */
+  /** which tool, if any, the player currently has in hand */
+  activeTool: ToolType | null
+  /** whether the electric jack has been purchased (the hand jack is owned from the start) */
+  ownsElectricJack: boolean
+  /** id of the pallet currently lifted, regardless of which jack is carrying it */
   carriedPalletId: string | null
   /** whether the jack forks are currently raised */
   forksRaised: boolean
+  handJackPosition: [number, number, number]
+  handJackRotationY: number
+  electricJackPosition: [number, number, number]
+  electricJackRotationY: number
+  /** battery charge of the electric jack, 0-100 */
+  electricJackBattery: number
 }

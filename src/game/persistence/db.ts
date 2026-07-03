@@ -7,6 +7,7 @@ export interface SaveGame {
   cash: number
   day: number
   rentPerDay: number
+  reputation: number
   dayEnded: boolean
   jobs: Job[]
   pallets: Pallet[]

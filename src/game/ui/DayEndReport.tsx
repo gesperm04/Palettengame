@@ -18,6 +18,9 @@ export function DayEndReport() {
 
         <div className="mt-4 space-y-2 text-sm">
           <Row label="Aufträge erledigt" value={`${report.jobsCompleted}`} />
+          {report.jobsFailed > 0 && (
+            <Row label="Aufträge verpasst" value={`${report.jobsFailed}`} valueClass="text-red-400" />
+          )}
           <Row label="Einnahmen" value={`+${report.income} €`} valueClass="text-green-400" />
           <Row label="Miete & Fixkosten" value={`-${report.rent} €`} valueClass="text-red-400" />
           <div className="my-2 border-t border-industrial-600" />
@@ -28,6 +31,13 @@ export function DayEndReport() {
             bold
           />
           <Row label="Kontostand" value={`${report.cashAfter} €`} bold />
+          {report.reputationDelta !== 0 && (
+            <Row
+              label="Ruf"
+              value={`${report.reputationDelta > 0 ? '+' : ''}${report.reputationDelta}`}
+              valueClass={report.reputationDelta > 0 ? 'text-green-400' : 'text-red-400'}
+            />
+          )}
         </div>
 
         <button

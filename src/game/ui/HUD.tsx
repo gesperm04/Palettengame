@@ -4,9 +4,13 @@ export function HUD() {
   const cash = useGameStore((s) => s.cash)
   const day = useGameStore((s) => s.day)
   const rentPerDay = useGameStore((s) => s.rentPerDay)
+  const reputation = useGameStore((s) => s.reputation)
   const jobs = useGameStore((s) => s.jobs)
   const dayEnded = useGameStore((s) => s.dayEnded)
+  const activeTool = useGameStore((s) => s.equipment.activeTool)
+  const electricJackBattery = useGameStore((s) => s.equipment.electricJackBattery)
   const setJobBoardOpen = useGameStore((s) => s.setJobBoardOpen)
+  const setEquipmentShopOpen = useGameStore((s) => s.setEquipmentShopOpen)
   const endDay = useGameStore((s) => s.endDay)
 
   const openJobs = jobs.filter((j) => j.status === 'verfuegbar' || j.status === 'aktiv').length
@@ -19,9 +23,24 @@ export function HUD() {
       <div className="pointer-events-auto flex flex-col gap-1">
         <Badge label="Tag" value={String(day)} />
         <Badge label="Kontostand" value={`${cash} €`} accent={cash < 0} />
+        <Badge label="Ruf" value={`${reputation}/100`} />
         <span className="rounded bg-industrial-900/70 px-2 py-0.5 text-[11px] text-industrial-600">
           Miete/Tag: {rentPerDay} €
         </span>
+        {activeTool === 'elektro' && (
+          <div className="w-[9.5rem] rounded bg-industrial-900/70 px-2 py-1">
+            <div className="flex items-center justify-between text-[11px] text-industrial-600">
+              <span>Akku</span>
+              <span>{Math.round(electricJackBattery)}%</span>
+            </div>
+            <div className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-industrial-700">
+              <div
+                className={`h-full ${electricJackBattery > 20 ? 'bg-warn-yellow' : 'bg-red-500'}`}
+                style={{ width: `${electricJackBattery}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="pointer-events-auto flex flex-col items-end gap-2">
@@ -36,6 +55,13 @@ export function HUD() {
               {openJobs}
             </span>
           )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEquipmentShopOpen(true)}
+          className="rounded-xl border-2 border-industrial-600 bg-industrial-800 px-4 py-2 text-sm font-bold text-white active:scale-95"
+        >
+          Ausrüstung
         </button>
         <button
           type="button"

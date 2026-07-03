@@ -34,6 +34,27 @@ export const JACK_PARK_POSITION: [number, number, number] = [4.4, 0, 0.5]
 export const JACK_PARK_ROTATION_Y = Math.PI / 2
 export const JACK_PICKUP_RANGE = 1.6
 
+// Elektrischer Hubwagen: zweites Gerät, kaufbar
+export const ELECTRIC_JACK_PARK_POSITION: [number, number, number] = [5.2, 0, -1.5]
+export const ELECTRIC_JACK_PARK_ROTATION_Y = Math.PI / 2
+export const ELECTRIC_JACK_PRICE = 650
+export const ELECTRIC_JACK_MAX_KG = 1500
+export const ELECTRIC_JACK_BATTERY_MAX = 100
+export const ELECTRIC_JACK_BATTERY_PER_TRIP = 6
+export const ELECTRIC_JACK_RECHARGE_PER_DAY = 100
+
+// Reputation
+export const REPUTATION_START = 50
+export const REPUTATION_MAX = 100
+export const REPUTATION_GAIN_PER_JOB = 4
+export const REPUTATION_LOSS_PER_FAILED_JOB = 8
+export const REPUTATION_TIER_2 = 60 // schaltet 2. gleichzeitigen Auftrag frei
+export const REPUTATION_TIER_3 = 85 // schaltet 3. gleichzeitigen Auftrag frei
+
+// Kapazität & Fristen
+export const MAX_ACTIVE_JOBS_BASE = 1
+export const JOB_DEADLINE_BUFFER_DAYS = 2
+
 export function deliveryPosition(index: number): [number, number, number] {
   const col = index % DELIVERY_ROW_LENGTH
   const row = Math.floor(index / DELIVERY_ROW_LENGTH)

@@ -8,12 +8,15 @@ import { consumeAction } from '@/game/input/inputState'
 import { deliveryPosition, slotPosition, JACK_PICKUP_RANGE } from '@/game/constants'
 import { PalletMesh } from '@/game/scene/Pallet'
 import { HandPalletJackMesh } from '@/game/scene/HandPalletJackMesh'
+import { ElectricJackMesh } from '@/game/scene/ElectricJackMesh'
+import type { Job, ToolType } from '@/game/types'
 
 const PICKUP_RANGE = 1.7
 const PLACE_RANGE = 1.9
 const JACK_OFFSET = 0.95
 const LIFT_HEIGHT = 0.18
-const PUMP_STEPS = 3
+const HAND_PUMP_STEPS = 3
+const ELECTRIC_PUMP_STEPS = 1
 
 type JackState = 'free' | 'attached' | 'carrying'
 
@@ -30,33 +33,70 @@ export function PalletJackSystem() {
 
     const interaction = useInteractionStore.getState()
     const triggered = consumeAction()
-    const hasJack = useGameStore.getState().equipment.hasJack
+    const equipment = useGameStore.getState().equipment
+    const activeTool = equipment.activeTool
+    const pumpSteps = activeTool === 'elektro' ? ELECTRIC_PUMP_STEPS : HAND_PUMP_STEPS
 
-    if (!hasJack) {
-      const [jx, , jz] = useGameStore.getState().equipment.jackPosition
-      const inRange = Math.hypot(jx - px, jz - pz) <= JACK_PICKUP_RANGE
+    if (!activeTool) {
+      const candidates: { tool: ToolType; position: [number, number, number] }[] = [
+        { tool: 'hand', position: equipment.handJackPosition },
+      ]
+      if (equipment.ownsElectricJack) {
+        candidates.push({ tool: 'elektro', position: equipment.electricJackPosition })
+      }
+      let nearestTool: ToolType | null = null
+      let nearestDist = Infinity
+      for (const c of candidates) {
+        const d = Math.hypot(c.position[0] - px, c.position[2] - pz)
+        if (d < nearestDist) {
+          nearestDist = d
+          nearestTool = c.tool
+        }
+      }
+      const inRange = nearestTool !== null && nearestDist <= JACK_PICKUP_RANGE
       interaction.setContext(inRange ? 'hubwagen_nehmen' : null, null, null)
       interaction.setLiftProgress(0)
-      if (triggered && inRange) {
-        useGameStore.getState().pickUpJack()
+      if (triggered && inRange && nearestTool) {
+        useGameStore.getState().pickUpTool(nearestTool)
       }
     } else if (jackState === 'free') {
-      const { pallets, jobs } = useGameStore.getState()
-      const activePalletIds = new Set(
-        jobs.filter((j) => j.status === 'aktiv').flatMap((j) => j.palletIds),
-      )
+      const { pallets, jobs, slots } = useGameStore.getState()
+      const activeJobByPallet = new Map<string, Job>()
+      for (const job of jobs) {
+        if (job.status !== 'aktiv') continue
+        for (const id of job.palletIds) activeJobByPallet.set(id, job)
+      }
+
       let nearestId: string | null = null
       let nearestDist = Infinity
       for (const p of pallets) {
-        if (p.state !== 'wartend' || !activePalletIds.has(p.id)) continue
-        const [x, , z] = deliveryPosition(p.deliveryIndex)
-        const d = Math.hypot(x - px, z - pz)
-        if (d < nearestDist) {
-          nearestDist = d
-          nearestId = p.id
+        const job = activeJobByPallet.get(p.id)
+        if (!job) continue
+        if (p.state === 'wartend') {
+          const [x, , z] = deliveryPosition(p.deliveryIndex)
+          const d = Math.hypot(x - px, z - pz)
+          if (d < nearestDist) {
+            nearestDist = d
+            nearestId = p.id
+          }
+        } else if (
+          p.state === 'eingelagert' &&
+          job.type === 'umlagerung' &&
+          job.relocationTargets?.[p.id] !== p.slotId
+        ) {
+          const slot = slots.find((s) => s.id === p.slotId)
+          if (!slot) continue
+          const [x, , z] = slotPosition(slot.gridX, slot.gridZ)
+          const d = Math.hypot(x - px, z - pz)
+          if (d < nearestDist) {
+            nearestDist = d
+            nearestId = p.id
+          }
         }
       }
-      const inRange = nearestId !== null && nearestDist <= PICKUP_RANGE
+
+      const batteryOk = activeTool !== 'elektro' || equipment.electricJackBattery > 0
+      const inRange = nearestId !== null && nearestDist <= PICKUP_RANGE && batteryOk
 
       if (inRange && nearestId) {
         interaction.setContext('aufnehmen', nearestId, null)
@@ -72,7 +112,7 @@ export function PalletJackSystem() {
         if (triggered) {
           const parkX = px + Math.sin(facing) * JACK_OFFSET
           const parkZ = pz + Math.cos(facing) * JACK_OFFSET
-          useGameStore.getState().putDownJack([parkX, py, parkZ], facing)
+          useGameStore.getState().putDownTool([parkX, py, parkZ], facing)
         }
       }
     } else if (jackState === 'attached') {
@@ -80,7 +120,7 @@ export function PalletJackSystem() {
       interaction.setLiftProgress(liftProgressRef.current)
 
       if (triggered) {
-        liftProgressRef.current = Math.min(1, liftProgressRef.current + 1 / PUMP_STEPS)
+        liftProgressRef.current = Math.min(1, liftProgressRef.current + 1 / pumpSteps)
         if (liftProgressRef.current >= 1) {
           const palletId = attachedPalletIdRef.current
           if (palletId) useGameStore.getState().pickUpPallet(palletId)
@@ -115,7 +155,7 @@ export function PalletJackSystem() {
     // position the jack + carried pallet visual in front of the player
     const group = jackVisualRef.current
     if (group) {
-      const visible = hasJack
+      const visible = !!activeTool
       group.visible = visible
       if (visible) {
         const offsetX = Math.sin(facing) * JACK_OFFSET
@@ -132,10 +172,11 @@ export function PalletJackSystem() {
   const carriedPallet = useGameStore((s) =>
     s.equipment.carriedPalletId ? s.pallets.find((p) => p.id === s.equipment.carriedPalletId) : null,
   )
+  const activeTool = useGameStore((s) => s.equipment.activeTool)
 
   return (
     <group ref={jackVisualRef} visible={false}>
-      <HandPalletJackMesh />
+      {activeTool === 'elektro' ? <ElectricJackMesh /> : <HandPalletJackMesh />}
 
       {carriedPallet && (
         <group position={[0, 0, 0.15]}>
