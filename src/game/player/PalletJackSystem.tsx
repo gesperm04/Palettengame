@@ -9,9 +9,12 @@ import { deliveryPosition, slotPosition, JACK_PICKUP_RANGE } from '@/game/consta
 import { PalletMesh } from '@/game/scene/Pallet'
 import { HandPalletJackMesh } from '@/game/scene/HandPalletJackMesh'
 import { ElectricJackMesh } from '@/game/scene/ElectricJackMesh'
-import type { Job, ToolType } from '@/game/types'
+import type { Job, Pallet, StorageSlot, ToolType } from '@/game/types'
 
 const PICKUP_RANGE = 1.7
+// once attached, a little more slack than PICKUP_RANGE so shifting stance
+// mid-pump doesn't cancel the attempt, while still catching "walked away"
+const ATTACHED_RANGE = 2.1
 const PLACE_RANGE = 1.9
 const JACK_OFFSET = 0.95
 const LIFT_HEIGHT = 0.18
@@ -19,6 +22,15 @@ const HAND_PUMP_STEPS = 3
 const ELECTRIC_PUMP_STEPS = 1
 
 type JackState = 'free' | 'attached' | 'carrying'
+
+function getPalletPosition(pallet: Pallet, slots: StorageSlot[]): [number, number, number] | null {
+  if (pallet.state === 'wartend') return deliveryPosition(pallet.deliveryIndex)
+  if (pallet.state === 'eingelagert' && pallet.slotId) {
+    const slot = slots.find((s) => s.id === pallet.slotId)
+    return slot ? slotPosition(slot.gridX, slot.gridZ) : null
+  }
+  return null
+}
 
 export function PalletJackSystem() {
   const jackVisualRef = useRef<THREE.Group>(null)
@@ -72,26 +84,16 @@ export function PalletJackSystem() {
       for (const p of pallets) {
         const job = activeJobByPallet.get(p.id)
         if (!job) continue
-        if (p.state === 'wartend') {
-          const [x, , z] = deliveryPosition(p.deliveryIndex)
-          const d = Math.hypot(x - px, z - pz)
-          if (d < nearestDist) {
-            nearestDist = d
-            nearestId = p.id
-          }
-        } else if (
-          p.state === 'eingelagert' &&
-          job.type === 'umlagerung' &&
-          job.relocationTargets?.[p.id] !== p.slotId
-        ) {
-          const slot = slots.find((s) => s.id === p.slotId)
-          if (!slot) continue
-          const [x, , z] = slotPosition(slot.gridX, slot.gridZ)
-          const d = Math.hypot(x - px, z - pz)
-          if (d < nearestDist) {
-            nearestDist = d
-            nearestId = p.id
-          }
+        const isRelocationCandidate =
+          p.state === 'eingelagert' && job.type === 'umlagerung' && job.relocationTargets?.[p.id] !== p.slotId
+        if (p.state !== 'wartend' && !isRelocationCandidate) continue
+
+        const palletPos = getPalletPosition(p, slots)
+        if (!palletPos) continue
+        const d = Math.hypot(palletPos[0] - px, palletPos[2] - pz)
+        if (d < nearestDist) {
+          nearestDist = d
+          nearestId = p.id
         }
       }
 
@@ -116,16 +118,29 @@ export function PalletJackSystem() {
         }
       }
     } else if (jackState === 'attached') {
-      interaction.setContext('heben', attachedPalletIdRef.current, null)
-      interaction.setLiftProgress(liftProgressRef.current)
+      const { pallets, slots } = useGameStore.getState()
+      const attachedPallet = pallets.find((p) => p.id === attachedPalletIdRef.current)
+      const palletPos = attachedPallet ? getPalletPosition(attachedPallet, slots) : null
+      const stillInRange =
+        !!palletPos && Math.hypot(palletPos[0] - px, palletPos[2] - pz) <= ATTACHED_RANGE
 
-      if (triggered) {
-        liftProgressRef.current = Math.min(1, liftProgressRef.current + 1 / pumpSteps)
-        if (liftProgressRef.current >= 1) {
-          const palletId = attachedPalletIdRef.current
-          if (palletId) useGameStore.getState().pickUpPallet(palletId)
-          jackStateRef.current = 'carrying'
-          interaction.setLiftProgress(0)
+      if (!attachedPallet || !stillInRange) {
+        // walked away (or the pallet is gone) mid-lift: drop the attempt
+        jackStateRef.current = 'free'
+        attachedPalletIdRef.current = null
+        interaction.setLiftProgress(0)
+      } else {
+        interaction.setContext('heben', attachedPalletIdRef.current, null)
+        interaction.setLiftProgress(liftProgressRef.current)
+
+        if (triggered) {
+          liftProgressRef.current = Math.min(1, liftProgressRef.current + 1 / pumpSteps)
+          if (liftProgressRef.current >= 1) {
+            const palletId = attachedPalletIdRef.current
+            if (palletId) useGameStore.getState().pickUpPallet(palletId)
+            jackStateRef.current = 'carrying'
+            interaction.setLiftProgress(0)
+          }
         }
       }
     } else if (jackState === 'carrying') {
