@@ -6,6 +6,7 @@ import { inputState } from '@/game/input/inputState'
 import { cameraState } from '@/game/player/cameraState'
 import { playerTransform } from '@/game/store/playerTransform'
 import { useGameStore } from '@/game/store/gameStore'
+import { consumeTeleportRequest } from '@/game/store/teleportRequest'
 
 const WALK_SPEED = 3.2
 const CARRY_SPEED = 2.1
@@ -30,11 +31,15 @@ export function Character() {
     const body = bodyRef.current
     if (!body) return
 
-    if (body.translation().y < FALL_RESET_Y) {
-      body.setTranslation(SAFE_RESPAWN_POSITION, true)
+    const teleportTo = consumeTeleportRequest()
+    if (teleportTo || body.translation().y < FALL_RESET_Y) {
+      const target = teleportTo
+        ? { x: teleportTo[0], y: teleportTo[1], z: teleportTo[2] }
+        : SAFE_RESPAWN_POSITION
+      body.setTranslation(target, true)
       body.setLinvel({ x: 0, y: 0, z: 0 }, true)
       facingRef.current = 0
-      playerTransform.position = [SAFE_RESPAWN_POSITION.x, SAFE_RESPAWN_POSITION.y, SAFE_RESPAWN_POSITION.z]
+      playerTransform.position = [target.x, target.y, target.z]
       playerTransform.rotationY = 0
       return
     }

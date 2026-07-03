@@ -9,6 +9,7 @@ export interface SaveGame {
   rentPerDay: number
   reputation: number
   dayEnded: boolean
+  bankrupt: boolean
   jobs: Job[]
   pallets: Pallet[]
   slots: StorageSlot[]

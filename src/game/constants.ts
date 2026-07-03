@@ -55,6 +55,9 @@ export const REPUTATION_TIER_3 = 85 // schaltet 3. gleichzeitigen Auftrag frei
 export const MAX_ACTIVE_JOBS_BASE = 1
 export const JOB_DEADLINE_BUFFER_DAYS = 2
 
+// Insolvenz: wer zu tief in den Miesen steckt, ist raus - Neustart bei Tag 1
+export const BANKRUPTCY_DEBT_THRESHOLD = -3 * RENT_PER_DAY
+
 export function deliveryPosition(index: number): [number, number, number] {
   const col = index % DELIVERY_ROW_LENGTH
   const row = Math.floor(index / DELIVERY_ROW_LENGTH)

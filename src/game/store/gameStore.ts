@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { DailyReport, EquipmentState, Job, Pallet, StorageSlot, ToolType } from '@/game/types'
 import {
+  BANKRUPTCY_DEBT_THRESHOLD,
   ELECTRIC_JACK_BATTERY_MAX,
   ELECTRIC_JACK_PARK_POSITION,
   ELECTRIC_JACK_PARK_ROTATION_Y,
@@ -35,6 +36,20 @@ function buildSlots(): StorageSlot[] {
   return slots
 }
 
+export function buildInitialEquipment(): EquipmentState {
+  return {
+    activeTool: null,
+    ownsElectricJack: false,
+    carriedPalletId: null,
+    forksRaised: false,
+    handJackPosition: JACK_PARK_POSITION,
+    handJackRotationY: JACK_PARK_ROTATION_Y,
+    electricJackPosition: ELECTRIC_JACK_PARK_POSITION,
+    electricJackRotationY: ELECTRIC_JACK_PARK_ROTATION_Y,
+    electricJackBattery: ELECTRIC_JACK_BATTERY_MAX,
+  }
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
@@ -45,6 +60,7 @@ export interface GameState {
   rentPerDay: number
   reputation: number
   dayEnded: boolean
+  bankrupt: boolean
   jobs: Job[]
   pallets: Pallet[]
   slots: StorageSlot[]
@@ -61,6 +77,7 @@ export interface GameState {
   placeCarriedPallet: (slotId: string) => void
   endDay: () => void
   startNewDay: () => void
+  restartAfterBankruptcy: () => void
   setJobBoardOpen: (open: boolean) => void
   setEquipmentShopOpen: (open: boolean) => void
   hydrate: (state: Partial<GameState>) => void
@@ -89,20 +106,11 @@ export const useGameStore = create<GameState>((set) => ({
   rentPerDay: RENT_PER_DAY,
   reputation: REPUTATION_START,
   dayEnded: false,
+  bankrupt: false,
   jobs: [],
   pallets: [],
   slots: buildSlots(),
-  equipment: {
-    activeTool: null,
-    ownsElectricJack: false,
-    carriedPalletId: null,
-    forksRaised: false,
-    handJackPosition: JACK_PARK_POSITION,
-    handJackRotationY: JACK_PARK_ROTATION_Y,
-    electricJackPosition: ELECTRIC_JACK_PARK_POSITION,
-    electricJackRotationY: ELECTRIC_JACK_PARK_ROTATION_Y,
-    electricJackBattery: ELECTRIC_JACK_BATTERY_MAX,
-  },
+  equipment: buildInitialEquipment(),
   lastReport: null,
   jobBoardOpen: false,
   equipmentShopOpen: false,
@@ -249,10 +257,13 @@ export const useGameStore = create<GameState>((set) => ({
         cashAfter: cash,
       }
 
+      const bankrupt = cash < BANKRUPTCY_DEBT_THRESHOLD
+
       return {
         cash,
         reputation,
         dayEnded: true,
+        bankrupt,
         lastReport: report,
         jobs: remainingJobs,
         pallets,
@@ -285,6 +296,27 @@ export const useGameStore = create<GameState>((set) => ({
         lastReport: null,
         jobs: [...state.jobs, ...newJobs],
         pallets: [...state.pallets, ...newPallets],
+      }
+    }),
+
+  restartAfterBankruptcy: () =>
+    set(() => {
+      const slots = buildSlots()
+      const { jobs, pallets } = generateJobsForDay(1, REPUTATION_START, 0, [], slots)
+      return {
+        cash: STARTING_CASH,
+        day: 1,
+        rentPerDay: RENT_PER_DAY,
+        reputation: REPUTATION_START,
+        dayEnded: false,
+        bankrupt: false,
+        jobs,
+        pallets,
+        slots,
+        equipment: buildInitialEquipment(),
+        lastReport: null,
+        jobBoardOpen: false,
+        equipmentShopOpen: false,
       }
     }),
 

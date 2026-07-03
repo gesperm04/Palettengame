@@ -2,10 +2,11 @@ import { useGameStore } from '@/game/store/gameStore'
 
 export function DayEndReport() {
   const dayEnded = useGameStore((s) => s.dayEnded)
+  const bankrupt = useGameStore((s) => s.bankrupt)
   const report = useGameStore((s) => s.lastReport)
   const startNewDay = useGameStore((s) => s.startNewDay)
 
-  if (!dayEnded || !report) return null
+  if (!dayEnded || !report || bankrupt) return null
 
   const profitPositive = report.profit >= 0
 

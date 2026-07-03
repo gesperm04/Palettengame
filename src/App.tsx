@@ -7,6 +7,7 @@ import { JobBoard } from '@/game/ui/JobBoard'
 import { EquipmentShop } from '@/game/ui/EquipmentShop'
 import { ScannerOverlay } from '@/game/ui/ScannerOverlay'
 import { DayEndReport } from '@/game/ui/DayEndReport'
+import { BankruptcyScreen } from '@/game/ui/BankruptcyScreen'
 import { initGameIfEmpty, useGameStore } from '@/game/store/gameStore'
 import { initAutosave, loadSavedGame } from '@/game/persistence/saveGame'
 
@@ -40,6 +41,7 @@ function App() {
       <JobBoard />
       <EquipmentShop />
       <DayEndReport />
+      <BankruptcyScreen />
     </div>
   )
 }

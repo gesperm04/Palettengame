@@ -1,4 +1,5 @@
 import { useGameStore } from '@/game/store/gameStore'
+import { BANKRUPTCY_DEBT_THRESHOLD } from '@/game/constants'
 
 export function HUD() {
   const cash = useGameStore((s) => s.cash)
@@ -24,6 +25,11 @@ export function HUD() {
         <Badge label="Tag" value={String(day)} />
         <Badge label="Kontostand" value={`${cash} €`} accent={cash < 0} />
         <Badge label="Ruf" value={`${reputation}/100`} />
+        {cash < 0 && cash < BANKRUPTCY_DEBT_THRESHOLD * 0.5 && (
+          <span className="rounded bg-red-900/70 px-2 py-0.5 text-[11px] font-bold text-red-300">
+            Insolvenzgefahr!
+          </span>
+        )}
         <span className="rounded bg-industrial-900/70 px-2 py-0.5 text-[11px] text-industrial-600">
           Miete/Tag: {rentPerDay} €
         </span>

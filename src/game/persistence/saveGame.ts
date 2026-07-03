@@ -1,4 +1,4 @@
-import { useGameStore } from '@/game/store/gameStore'
+import { buildInitialEquipment, useGameStore } from '@/game/store/gameStore'
 import { playerTransform } from '@/game/store/playerTransform'
 import { readSave, writeSave } from '@/game/persistence/db'
 
@@ -13,6 +13,7 @@ export async function saveNow(): Promise<void> {
     rentPerDay: state.rentPerDay,
     reputation: state.reputation,
     dayEnded: state.dayEnded,
+    bankrupt: state.bankrupt,
     jobs: state.jobs,
     pallets: state.pallets,
     slots: state.slots,
@@ -55,10 +56,13 @@ export async function loadSavedGame(): Promise<boolean> {
     rentPerDay: saved.rentPerDay,
     reputation: saved.reputation,
     dayEnded: saved.dayEnded,
+    bankrupt: saved.bankrupt ?? false,
     jobs: saved.jobs,
-    pallets: saved.pallets,
+    // merge onto fresh defaults so saves from an older equipment shape
+    // (renamed/added fields across updates) don't leave anything undefined
+    pallets: saved.pallets.map((p) => ({ ...p, code: p.code ?? 'PAL-????' })),
     slots: saved.slots,
-    equipment: saved.equipment,
+    equipment: { ...buildInitialEquipment(), ...saved.equipment },
     lastReport: saved.lastReport,
   })
   playerTransform.position = saved.player.position
