@@ -12,6 +12,11 @@ const CARRY_SPEED = 2.1
 const ELECTRIC_CARRY_SPEED = 2.8
 const TURN_LERP = 0.22
 
+// safety net: if the player ever falls off the map (e.g. through a collision
+// gap), teleport them back to a safe spot instead of free-falling forever
+const FALL_RESET_Y = -8
+const SAFE_RESPAWN_POSITION = { x: 0, y: 0.1, z: 2 }
+
 const tmpDir = new THREE.Vector3()
 const tmpForward = new THREE.Vector3()
 const tmpRight = new THREE.Vector3()
@@ -24,6 +29,15 @@ export function Character() {
   useFrame(() => {
     const body = bodyRef.current
     if (!body) return
+
+    if (body.translation().y < FALL_RESET_Y) {
+      body.setTranslation(SAFE_RESPAWN_POSITION, true)
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true)
+      facingRef.current = 0
+      playerTransform.position = [SAFE_RESPAWN_POSITION.x, SAFE_RESPAWN_POSITION.y, SAFE_RESPAWN_POSITION.z]
+      playerTransform.rotationY = 0
+      return
+    }
 
     const equipment = useGameStore.getState().equipment
     const carrying = !!equipment.carriedPalletId
