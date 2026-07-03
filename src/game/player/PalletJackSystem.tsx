@@ -5,12 +5,7 @@ import { playerTransform } from '@/game/store/playerTransform'
 import { useGameStore } from '@/game/store/gameStore'
 import { useInteractionStore } from '@/game/store/interactionStore'
 import { consumeAction } from '@/game/input/inputState'
-import {
-  deliveryPosition,
-  slotPosition,
-  JACK_PARK_POSITION,
-  JACK_PICKUP_RANGE,
-} from '@/game/constants'
+import { deliveryPosition, slotPosition, JACK_PICKUP_RANGE } from '@/game/constants'
 import { PalletMesh } from '@/game/scene/Pallet'
 import { HandPalletJackMesh } from '@/game/scene/HandPalletJackMesh'
 
@@ -38,7 +33,7 @@ export function PalletJackSystem() {
     const hasJack = useGameStore.getState().equipment.hasJack
 
     if (!hasJack) {
-      const [jx, , jz] = JACK_PARK_POSITION
+      const [jx, , jz] = useGameStore.getState().equipment.jackPosition
       const inRange = Math.hypot(jx - px, jz - pz) <= JACK_PICKUP_RANGE
       interaction.setContext(inRange ? 'hubwagen_nehmen' : null, null, null)
       interaction.setLiftProgress(0)
@@ -62,13 +57,23 @@ export function PalletJackSystem() {
         }
       }
       const inRange = nearestId !== null && nearestDist <= PICKUP_RANGE
-      interaction.setContext(inRange ? 'aufnehmen' : null, inRange ? nearestId : null, null)
-      interaction.setLiftProgress(0)
 
-      if (triggered && inRange && nearestId) {
-        jackStateRef.current = 'attached'
-        attachedPalletIdRef.current = nearestId
-        liftProgressRef.current = 0
+      if (inRange && nearestId) {
+        interaction.setContext('aufnehmen', nearestId, null)
+        interaction.setLiftProgress(0)
+        if (triggered) {
+          jackStateRef.current = 'attached'
+          attachedPalletIdRef.current = nearestId
+          liftProgressRef.current = 0
+        }
+      } else {
+        interaction.setContext('hubwagen_abstellen', null, null)
+        interaction.setLiftProgress(0)
+        if (triggered) {
+          const parkX = px + Math.sin(facing) * JACK_OFFSET
+          const parkZ = pz + Math.cos(facing) * JACK_OFFSET
+          useGameStore.getState().putDownJack([parkX, py, parkZ], facing)
+        }
       }
     } else if (jackState === 'attached') {
       interaction.setContext('heben', attachedPalletIdRef.current, null)

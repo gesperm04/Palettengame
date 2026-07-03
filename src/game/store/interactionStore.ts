@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 
-export type ContextAction = 'hubwagen_nehmen' | 'aufnehmen' | 'heben' | 'absenken' | 'ablegen' | null
+export type ContextAction =
+  | 'hubwagen_nehmen'
+  | 'hubwagen_abstellen'
+  | 'aufnehmen'
+  | 'heben'
+  | 'absenken'
+  | 'ablegen'
+  | null
 
 interface InteractionState {
   contextAction: ContextAction

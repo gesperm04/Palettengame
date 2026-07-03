@@ -49,6 +49,10 @@ export interface DailyReport {
 export interface EquipmentState {
   /** whether the player has fetched the hand pallet jack from its parking spot */
   hasJack: boolean
+  /** where the jack is parked while not held by the player */
+  jackPosition: [number, number, number]
+  /** facing angle the jack was left at when parked */
+  jackRotationY: number
   /** id of the pallet currently lifted on the hand pallet jack, if any */
   carriedPalletId: string | null
   /** whether the jack forks are currently raised */

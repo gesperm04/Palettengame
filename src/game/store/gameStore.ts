@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import type { DailyReport, EquipmentState, Job, Pallet, StorageSlot } from '@/game/types'
-import { RENT_PER_DAY, SLOT_COLS, SLOT_ROWS, STARTING_CASH } from '@/game/constants'
+import {
+  JACK_PARK_POSITION,
+  JACK_PARK_ROTATION_Y,
+  RENT_PER_DAY,
+  SLOT_COLS,
+  SLOT_ROWS,
+  STARTING_CASH,
+} from '@/game/constants'
 import { generateDailyJob } from '@/game/systems/jobGenerator'
 
 function buildSlots(): StorageSlot[] {
@@ -33,6 +40,7 @@ export interface GameState {
 
   acceptJob: (jobId: string) => void
   pickUpJack: () => void
+  putDownJack: (position: [number, number, number], rotationY: number) => void
   pickUpPallet: (palletId: string) => void
   placeCarriedPallet: (slotId: string) => void
   endDay: () => void
@@ -59,7 +67,13 @@ export const useGameStore = create<GameState>((set) => ({
   jobs: [],
   pallets: [],
   slots: buildSlots(),
-  equipment: { hasJack: false, carriedPalletId: null, forksRaised: false },
+  equipment: {
+    hasJack: false,
+    jackPosition: JACK_PARK_POSITION,
+    jackRotationY: JACK_PARK_ROTATION_Y,
+    carriedPalletId: null,
+    forksRaised: false,
+  },
   lastReport: null,
   jobBoardOpen: false,
 
@@ -74,6 +88,14 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) =>
       state.equipment.hasJack ? state : { equipment: { ...state.equipment, hasJack: true } },
     ),
+
+  putDownJack: (position, rotationY) =>
+    set((state) => {
+      if (!state.equipment.hasJack || state.equipment.carriedPalletId) return state
+      return {
+        equipment: { ...state.equipment, hasJack: false, jackPosition: position, jackRotationY: rotationY },
+      }
+    }),
 
   pickUpPallet: (palletId) =>
     set((state) => {

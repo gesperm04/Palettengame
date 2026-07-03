@@ -3,6 +3,7 @@ import { useInteractionStore } from '@/game/store/interactionStore'
 
 const LABELS: Record<string, string> = {
   hubwagen_nehmen: 'Hubwagen nehmen',
+  hubwagen_abstellen: 'Hubwagen abstellen',
   aufnehmen: 'Aufnehmen',
   heben: 'Heben',
   absenken: 'Absenken',
@@ -11,6 +12,7 @@ const LABELS: Record<string, string> = {
 
 const ICONS: Record<string, string> = {
   hubwagen_nehmen: '⛟',
+  hubwagen_abstellen: '⛟',
   aufnehmen: '⤓',
   heben: '⤒',
   absenken: '⤓',
