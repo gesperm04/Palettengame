@@ -1,4 +1,4 @@
-import type { Job, Pallet, StorageSlot } from '@/game/types'
+import type { Job, Pallet } from '@/game/types'
 import {
   JOB_DEADLINE_BUFFER_DAYS,
   REPUTATION_TIER_2,
@@ -76,32 +76,29 @@ function generateUmlagerungJob(
   day: number,
   reputation: number,
   storedPallets: Pallet[],
-  slots: StorageSlot[],
 ): { job: Job; pallets: Pallet[] } | null {
-  const freeSlots = slots.filter((s) => !s.occupiedPalletId)
-  const count = Math.min(3, storedPallets.length, freeSlots.length)
+  const count = Math.min(3, storedPallets.length)
   if (count < 2) return null
 
   const shuffledPallets = [...storedPallets].sort(() => Math.random() - 0.5).slice(0, count)
-  const shuffledSlots = [...freeSlots].sort(() => Math.random() - 0.5).slice(0, count)
   const multiplier = reputationPayoutMultiplier(reputation)
 
-  const relocationTargets: Record<string, string> = {}
-  shuffledPallets.forEach((p, i) => {
-    relocationTargets[p.id] = shuffledSlots[i].id
-  })
+  const originalSlots: Record<string, string> = {}
+  for (const p of shuffledPallets) {
+    if (p.slotId) originalSlots[p.id] = p.slotId
+  }
 
   const job: Job = {
     id: nextId('job'),
     type: 'umlagerung',
     title: 'Umlagerung: Bestand umsortieren',
     client: 'Interne Lagerdisposition',
-    description: `${count} eingelagerte Paletten zur Platzoptimierung an den zugewiesenen Stellplatz umlagern.`,
+    description: `${count} eingelagerte Paletten zur Platzoptimierung an einen anderen freien Stellplatz umlagern.`,
     payout: Math.round(count * 22 * multiplier),
     deadlineDay: day + JOB_DEADLINE_BUFFER_DAYS,
     palletIds: shuffledPallets.map((p) => p.id),
     status: 'verfuegbar',
-    relocationTargets,
+    originalSlots,
   }
 
   return { job, pallets: [] }
@@ -112,7 +109,6 @@ export function generateJobsForDay(
   reputation: number,
   existingWaitingCount: number,
   storedPallets: Pallet[],
-  slots: StorageSlot[],
 ): { jobs: Job[]; pallets: Pallet[] } {
   const jobCount = jobsPerDay(reputation)
   const jobs: Job[] = []
@@ -123,7 +119,7 @@ export function generateJobsForDay(
   let umlagerungUsed = false
   for (let i = 0; i < jobCount; i++) {
     if (!umlagerungUsed && storedPallets.length >= 3 && Math.random() < 0.5) {
-      const result = generateUmlagerungJob(day, reputation, storedPallets, slots)
+      const result = generateUmlagerungJob(day, reputation, storedPallets)
       if (result) {
         jobs.push(result.job)
         umlagerungUsed = true

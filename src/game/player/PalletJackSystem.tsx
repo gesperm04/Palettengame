@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { playerTransform } from '@/game/store/playerTransform'
-import { useGameStore } from '@/game/store/gameStore'
+import { isJobPalletDone, useGameStore } from '@/game/store/gameStore'
 import { useInteractionStore } from '@/game/store/interactionStore'
 import { consumeAction } from '@/game/input/inputState'
 import { deliveryPosition, slotPosition, JACK_PICKUP_RANGE } from '@/game/constants'
@@ -84,9 +84,8 @@ export function PalletJackSystem() {
       for (const p of pallets) {
         const job = activeJobByPallet.get(p.id)
         if (!job) continue
-        const isRelocationCandidate =
-          p.state === 'eingelagert' && job.type === 'umlagerung' && job.relocationTargets?.[p.id] !== p.slotId
-        if (p.state !== 'wartend' && !isRelocationCandidate) continue
+        if (p.state !== 'wartend' && p.state !== 'eingelagert') continue
+        if (isJobPalletDone(job, pallets, p.id)) continue
 
         const palletPos = getPalletPosition(p, slots)
         if (!palletPos) continue

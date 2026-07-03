@@ -87,7 +87,8 @@ export function isJobPalletDone(job: Job, pallets: Pallet[], palletId: string): 
   const pallet = pallets.find((p) => p.id === palletId)
   if (!pallet || pallet.state !== 'eingelagert') return false
   if (job.type === 'umlagerung') {
-    return job.relocationTargets?.[palletId] === pallet.slotId
+    // done once it's stored somewhere other than where it started
+    return job.originalSlots?.[palletId] !== pallet.slotId
   }
   return true
 }
@@ -288,7 +289,6 @@ export const useGameStore = create<GameState>((set) => ({
         state.reputation,
         existingWaitingCount,
         storedPallets,
-        state.slots,
       )
       return {
         day: nextDay,
@@ -302,7 +302,7 @@ export const useGameStore = create<GameState>((set) => ({
   restartAfterBankruptcy: () =>
     set(() => {
       const slots = buildSlots()
-      const { jobs, pallets } = generateJobsForDay(1, REPUTATION_START, 0, [], slots)
+      const { jobs, pallets } = generateJobsForDay(1, REPUTATION_START, 0, [])
       return {
         cash: STARTING_CASH,
         day: 1,
@@ -329,7 +329,7 @@ export const useGameStore = create<GameState>((set) => ({
 export function initGameIfEmpty() {
   const state = useGameStore.getState()
   if (state.jobs.length === 0 && state.pallets.length === 0) {
-    const { jobs, pallets } = generateJobsForDay(1, state.reputation, 0, [], state.slots)
+    const { jobs, pallets } = generateJobsForDay(1, state.reputation, 0, [])
     useGameStore.setState({ jobs, pallets })
   }
 }

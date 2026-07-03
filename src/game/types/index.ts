@@ -39,8 +39,8 @@ export interface Job {
   deadlineDay: number
   palletIds: string[]
   status: JobStatus
-  /** umlagerung only: palletId -> target storage slot id */
-  relocationTargets?: Record<string, string>
+  /** umlagerung only: palletId -> storage slot id it started in, before the job */
+  originalSlots?: Record<string, string>
 }
 
 export interface DailyReport {
