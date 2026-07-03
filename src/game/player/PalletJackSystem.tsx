@@ -133,7 +133,7 @@ export function PalletJackSystem() {
       <HandPalletJackMesh />
 
       {carriedPallet && (
-        <group position={[0, 0, -0.15]}>
+        <group position={[0, 0, 0.15]}>
           <PalletMesh position={[0, 0, 0]} goods={carriedPallet.goods} />
         </group>
       )}
